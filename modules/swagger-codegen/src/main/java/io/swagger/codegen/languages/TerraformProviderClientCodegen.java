@@ -40,12 +40,14 @@ public class TerraformProviderClientCodegen extends AbstractGoCodegen {
     public TerraformProviderClientCodegen() {
         super();
 
-        outputFolder = "generated-code/go";
-        modelTemplateFiles.put("model.mustache", ".go");
-        apiTemplateFiles.put("api.mustache", ".go");
+        //this.setModelNameSuffix("data_source");
 
-        modelDocTemplateFiles.put("model_doc.mustache", ".md");
-        apiDocTemplateFiles.put("api_doc.mustache", ".md");
+        outputFolder = "generated-code/go";
+        modelTemplateFiles.put("data_source.mustache", ".go");
+        apiTemplateFiles.put("resource.mustache", ".go");
+
+        //modelDocTemplateFiles.put("data_source_doc.mustache", ".md");
+        //apiDocTemplateFiles.put("resource_doc.mustache", ".md");
 
         embeddedTemplateDir = templateDir = "terraform-provider";
 
@@ -74,6 +76,20 @@ public class TerraformProviderClientCodegen extends AbstractGoCodegen {
     }
 
     @Override
+    public String toModelFilename(String name) {
+        return toModel("data_source" + name);
+    }
+
+    @Override
+    public String toApiFilename(String name) {
+        // replace - with _ e.g. created-at => created_at
+        name = name.replaceAll("-", "_"); // FIXME: a parameter should not be assigned. Also declare the methods parameters as 'final'.
+
+        // e.g. PetApi.go => pet_api.go
+        return "resource_" + underscore(name);
+    }
+
+    @Override
     public void processOpts() {
         super.processOpts();
 
@@ -81,7 +97,7 @@ public class TerraformProviderClientCodegen extends AbstractGoCodegen {
             setPackageName((String) additionalProperties.get(CodegenConstants.PACKAGE_NAME));
         }
         else {
-            setPackageName("swagger");
+            setPackageName(File.separator + "terraform-provider");
         }
 
         if (additionalProperties.containsKey(CodegenConstants.PACKAGE_VERSION)) {
@@ -94,20 +110,15 @@ public class TerraformProviderClientCodegen extends AbstractGoCodegen {
         additionalProperties.put(CodegenConstants.PACKAGE_NAME, packageName);
         additionalProperties.put(CodegenConstants.PACKAGE_VERSION, packageVersion);
 
-        additionalProperties.put("apiDocPath", apiDocPath);
-        additionalProperties.put("modelDocPath", modelDocPath);
+        //additionalProperties.put("apiDocPath", apiDocPath);
+        //additionalProperties.put("modelDocPath", modelDocPath);
 
         modelPackage = packageName;
         apiPackage = packageName;
 
-        supportingFiles.add(new SupportingFile("swagger.mustache", "api", "swagger.yaml"));
         supportingFiles.add(new SupportingFile("README.mustache", "", "README.md"));
-        supportingFiles.add(new SupportingFile("git_push.sh.mustache", "", "git_push.sh"));
         supportingFiles.add(new SupportingFile("gitignore.mustache", "", ".gitignore"));
-        supportingFiles.add(new SupportingFile("configuration.mustache", "", "configuration.go"));
-        supportingFiles.add(new SupportingFile("client.mustache", "", "client.go"));
-        supportingFiles.add(new SupportingFile("response.mustache", "", "response.go"));
-        supportingFiles.add(new SupportingFile(".travis.yml", "", ".travis.yml"));
+        supportingFiles.add(new SupportingFile("provider.mustache", "", "provider.go"));
 
         if(additionalProperties.containsKey(WITH_XML)) {
             setWithXml(Boolean.parseBoolean(additionalProperties.get(WITH_XML).toString()));
